@@ -213,9 +213,9 @@ function displayComparisonResults(data1, data2, sheetName) {
     // 确定最大行数和列数
     const maxRows = Math.max(data1.length, data2.length);
     const maxCols = Math.max(
-        data1.reduce((max, row) => Math.max(max, row.length), 
+        data1.reduce((max, row) => Math.max(max, row.length), 0),
         data2.reduce((max, row) => Math.max(max, row.length), 0)
-    )); // 修正语法错误，添加缺失的右括号
+    );
     
     // 创建表头
     const thead1 = document.createElement('thead');
@@ -479,7 +479,7 @@ function displayComparisonSummary(data1, data2) {
     progressBar.style.width = `${matchRate}%`;
 }
 
-// 重置工具
+// 下载Excel文件
 function downloadExcelFiles() {
     if (!file1Workbook || !file2Workbook) {
         showAlert('请先上传两个Excel文件', 'danger');
@@ -585,6 +585,7 @@ function downloadExcelFiles() {
     }
 }
 
+// 重置工具
 function resetTool() {
     // 重置文件信息
     document.getElementById('file1').value = '';
