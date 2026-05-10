@@ -230,6 +230,13 @@ function compareExcelFiles() {
         const json1 = XLSX.utils.sheet_to_json(sheet1, { header: 1 });
         const json2 = XLSX.utils.sheet_to_json(sheet2, { header: 1 });
         
+        // 存储数据供列选择器使用
+        window.editableData1 = json1;
+        window.editableData2 = json2;
+        
+        // 更新跨行对比的列选择器
+        updateColumnSelectors();
+        
         // 显示比对结果
         displayComparisonResults(json1, json2, sheetName);
         
