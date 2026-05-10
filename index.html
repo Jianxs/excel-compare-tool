@@ -65,6 +65,12 @@
                 <option value="row-by-row">逐行对比</option>
                 <option value="cross-row">跨行对比</option>
             </select>
+            <div id="cross-row-options" class="cross-row-options" style="display: none;">
+                <label for="match-col"><i class="fas fa-key"></i> 匹配列: </label>
+                <select id="match-col"></select>
+                <label for="diff-col"><i class="fas fa-columns"></i> 比对列: </label>
+                <select id="diff-col"></select>
+            </div>
             <div class="compare-options">
                 <label class="checkbox-label">
                     <input type="checkbox" id="ignore-case"> 忽略大小写

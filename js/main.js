@@ -44,7 +44,56 @@ function initEventListeners() {
     document.getElementById('ignore-case').addEventListener('change', compareExcelFiles);
     document.getElementById('only-diff').addEventListener('change', compareExcelFiles);
     document.getElementById('only-values').addEventListener('change', compareExcelFiles);
-    document.getElementById('compare-mode').addEventListener('change', compareExcelFiles);
+    document.getElementById('compare-mode').addEventListener('change', function() {
+        toggleCrossRowOptions();
+        compareExcelFiles();
+    });
+    document.getElementById('match-col').addEventListener('change', compareExcelFiles);
+    document.getElementById('diff-col').addEventListener('change', compareExcelFiles);
+}
+
+// 切换跨行对比选项显示
+function toggleCrossRowOptions() {
+    const compareMode = document.getElementById('compare-mode').value;
+    const crossRowOptions = document.getElementById('cross-row-options');
+    if (compareMode === 'cross-row') {
+        crossRowOptions.style.display = 'inline-block';
+        updateColumnSelectors();
+    } else {
+        crossRowOptions.style.display = 'none';
+    }
+}
+
+// 更新列选择器选项
+function updateColumnSelectors() {
+    if (!window.editableData1 || window.editableData1.length === 0) return;
+    
+    const headers = window.editableData1[0] || [];
+    const matchColSelect = document.getElementById('match-col');
+    const diffColSelect = document.getElementById('diff-col');
+    
+    const currentMatchCol = matchColSelect.value;
+    const currentDiffCol = diffColSelect.value;
+    
+    matchColSelect.innerHTML = '';
+    diffColSelect.innerHTML = '';
+    
+    headers.forEach((header, index) => {
+        const colLabel = header ? `${String.fromCharCode(65 + index)} (${header})` : `列 ${String.fromCharCode(65 + index)}`;
+        
+        const option1 = document.createElement('option');
+        option1.value = index;
+        option1.textContent = colLabel;
+        matchColSelect.appendChild(option1);
+        
+        const option2 = document.createElement('option');
+        option2.value = index;
+        option2.textContent = colLabel;
+        diffColSelect.appendChild(option2);
+    });
+    
+    if (currentMatchCol) matchColSelect.value = currentMatchCol;
+    if (currentDiffCol) diffColSelect.value = currentDiffCol;
 }
 
 // 初始化同步滚动
@@ -346,25 +395,26 @@ function displayComparisonResults(data1, data2, sheetName) {
                 }
             } else {
                 // 跨行对比模式
-                // 假设电话号码在第2列（索引为1）
-                const phoneColIndex = 2;
+                const matchColIndex = parseInt(document.getElementById('match-col').value) || 0;
+                const diffColIndex = parseInt(document.getElementById('diff-col').value) || 0;
                 
-                // 查找匹配的行（基于姓名列）
+                // 查找匹配的行（基于用户选择的匹配列）
                 const matchingRow1 = data1.find(row => 
-                    row.length > 1 && String(row[1]) === String(rowData2[1]));
+                    row.length > matchColIndex && String(row[matchColIndex]).trim() === String(rowData2[matchColIndex]).trim());
                 const matchingRow2 = data2.find(row => 
-                    row.length > 1 && String(row[1]) === String(rowData1[1]));
+                    row.length > matchColIndex && String(row[matchColIndex]).trim() === String(rowData1[matchColIndex]).trim());
                 
-                // 如果找到匹配的行，只比较电话号码列
+                // 如果找到匹配的行，只比较用户选择的比对列
                 if (matchingRow1 || matchingRow2) {
-                    const phone1 = matchingRow1 ? matchingRow1[phoneColIndex] : '';
-                    const phone2 = matchingRow2 ? matchingRow2[phoneColIndex] : '';
+                    const compareVal1 = matchingRow1 ? matchingRow1[diffColIndex] : '';
+                    const compareVal2 = matchingRow2 ? matchingRow2[diffColIndex] : '';
                     
-                    // 只标记电话号码列的差异
-                    if (col === phoneColIndex && String(phone1) !== String(phone2)) {
+                    // 只标记比对列的差异
+                    if (col === diffColIndex && String(compareVal1) !== String(compareVal2)) {
                         td1.classList.add('diff-cell');
                         td2.classList.add('diff-cell');
                         diffCount++;
+                        rowHasDiff = true;
                     } else {
                         td1.classList.add('match-cell');
                         td2.classList.add('match-cell');
@@ -376,6 +426,7 @@ function displayComparisonResults(data1, data2, sheetName) {
                         td1.classList.add('diff-cell');
                         td2.classList.add('diff-cell');
                         diffCount++;
+                        rowHasDiff = true;
                     } else {
                         td1.classList.add('match-cell');
                         td2.classList.add('match-cell');
@@ -441,20 +492,29 @@ function displayComparisonSummary(data1, data2) {
                 }
             } else {
                 // 跨行对比模式
-                const rowExistsInSheet1 = data1.some(rowData => 
-                    rowData.length === row2.length && 
-                    rowData.every((cell, i) => String(cell) === String(row2[i]))
+                const matchColIndex = parseInt(document.getElementById('match-col').value) || 0;
+                const diffColIndex = parseInt(document.getElementById('diff-col').value) || 0;
+                
+                // 查找匹配的行（基于用户选择的匹配列）
+                const matchingRow1 = data1.find(rowData => 
+                    rowData.length > matchColIndex && String(rowData[matchColIndex]).trim() === String(row2[matchColIndex]).trim()
                 );
-                const rowExistsInSheet2 = data2.some(rowData => 
-                    rowData.length === row1.length && 
-                    rowData.every((cell, i) => String(cell) === String(row1[i]))
+                const matchingRow2 = data2.find(rowData => 
+                    rowData.length > matchColIndex && String(rowData[matchColIndex]).trim() === String(row1[matchColIndex]).trim()
                 );
                 
-                if (rowExistsInSheet1 || rowExistsInSheet2) {
-                    // 如果整行数据在另一侧存在，则标记为匹配
-                    matchCount++;
+                if (matchingRow1 || matchingRow2) {
+                    // 如果找到匹配的行，只比较用户选择的比对列
+                    const compareVal1 = matchingRow1 ? matchingRow1[diffColIndex] : '';
+                    const compareVal2 = matchingRow2 ? matchingRow2[diffColIndex] : '';
+                    
+                    if (col === diffColIndex && String(compareVal1) !== String(compareVal2)) {
+                        diffCount++;
+                    } else {
+                        matchCount++;
+                    }
                 } else {
-                    // 如果整行数据不存在，则标记为差异
+                    // 如果没有匹配的行，标记整行为差异
                     if (String(val1) !== String(val2)) {
                         diffCount++;
                     } else {
